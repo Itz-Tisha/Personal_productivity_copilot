@@ -1,12 +1,14 @@
-import React from 'react';
-import Login from './components/Login.jsx';
+import { Routes, Route, Navigate } from "react-router-dom";
+import Login from "./components/Login";
+import Home from "./components/Home";
 
 function App() {
   return (
-    <div className="App">
-      <h1>MERN Google OAuth + JWT</h1>
-      <Login />
-    </div>
+    <Routes>
+      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/home" element={<Home />} />
+    </Routes>
   );
 }
 

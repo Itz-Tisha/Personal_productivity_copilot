@@ -10,45 +10,23 @@ const oAuth2Client = new google.auth.OAuth2(
   `${process.env.BACKEND_URL}/auth/callback`
 );
 
-// 1️⃣ Redirect user to Google login
+// 🔹 LOGIN / SIGNUP redirect
 router.get('/login', (req, res) => {
+  const mode = req.query.mode; // login | signup
+
   const url = oAuth2Client.generateAuthUrl({
-    access_type: 'offline',
-    scope: ['profile', 'email']
+    scope: ['profile', 'email'],
+    state: mode,
   });
+
   res.redirect(url);
 });
 
-// // 2️⃣ Google OAuth callback
-// router.get('/callback', async (req, res) => {
-//   const code = req.query.code;
-//   const { tokens } = await oAuth2Client.getToken(code);
-//   oAuth2Client.setCredentials(tokens);
-
-//   const oauth2 = google.oauth2({ auth: oAuth2Client, version: 'v2' });
-//   const { data } = await oauth2.userinfo.get();
-
-//   let user = await User.findOne({ googleId: data.id });
-//   if (!user) {
-//     user = await User.create({
-//       googleId: data.id,
-//       email: data.email,
-//       name: data.name
-//     });
-//   }
-
-//   // Create JWT
-//   const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-//   // Redirect frontend with JWT
-//   res.redirect(`${process.env.FRONTEND_URL}/login?token=${token}`);
-// });
-
-
-
+// 🔹 Google callback
 router.get('/callback', async (req, res) => {
   try {
-    const code = req.query.code;
+    const { code, state } = req.query;
+
     const { tokens } = await oAuth2Client.getToken(code);
     oAuth2Client.setCredentials(tokens);
 
@@ -56,21 +34,40 @@ router.get('/callback', async (req, res) => {
     const { data } = await oauth2.userinfo.get();
 
     let user = await User.findOne({ googleId: data.id });
-    if (!user) {
+
+    // LOGIN FLOW
+    if (state === 'login' && !user) {
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/login?error=NO_ACCOUNT`
+      );
+    }
+
+    // SIGNUP FLOW
+    if (state === 'signup') {
+      if (user) {
+        return res.redirect(
+          `${process.env.FRONTEND_URL}/login?error=ALREADY_EXISTS`
+        );
+      }
+
       user = await User.create({
         googleId: data.id,
+        name: data.name,
         email: data.email,
-        name: data.name
       });
     }
 
-    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.redirect(`${process.env.FRONTEND_URL}/login?token=${token}`);
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    res.redirect(`${process.env.FRONTEND_URL}/home?token=${token}`);
   } catch (err) {
-    console.error('Callback error:', err);
-    res.status(500).send('Internal Server Error');
+    console.error(err);
+    res.status(500).send('OAuth failed');
   }
 });
-
 
 module.exports = router;
