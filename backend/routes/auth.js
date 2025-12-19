@@ -10,90 +10,25 @@ const oAuth2Client = new google.auth.OAuth2(
   `${process.env.BACKEND_URL}/auth/callback`
 );
 
-// 🔹 LOGIN / SIGNUP redirect
+// 🔹 Redirect to Google
 router.get('/login', (req, res) => {
-<<<<<<< HEAD
   const mode = req.query.mode; // login | signup
 
   const url = oAuth2Client.generateAuthUrl({
-    scope: ['profile', 'email'],
-=======
-  const mode = req.query.mode;
-
-  const url = oAuth2Client.generateAuthUrl({
-    access_type: 'offline',   // 🔹 request refresh token
-    prompt: 'consent',        // 🔹 force consent screen
+    access_type: 'offline',
+    prompt: 'consent',
     scope: [
       'profile',
       'email',
       'https://www.googleapis.com/auth/gmail.readonly'
     ],
->>>>>>> 4e96b110194b9d3d7743cc41d0d149bddbb5886a
-    state: mode,
+    state: mode
   });
 
   res.redirect(url);
 });
 
-<<<<<<< HEAD
 // 🔹 Google callback
-=======
-
-
-// 🔹 Google callback
-// router.get('/callback', async (req, res) => {
-//   try {
-//     const { code, state } = req.query;
-
-//     const { tokens } = await oAuth2Client.getToken(code);
-//     oAuth2Client.setCredentials(tokens);
-
-//     const oauth2 = google.oauth2({ auth: oAuth2Client, version: 'v2' });
-//     const { data } = await oauth2.userinfo.get();
-
-//     let user = await User.findOne({ googleId: data.id });
-
-//     // LOGIN FLOW
-//     if (state === 'login' && !user) {
-//       return res.redirect(
-//         `${process.env.FRONTEND_URL}/login?error=NO_ACCOUNT`
-//       );
-//     }
-
-//     // SIGNUP FLOW
-//     if (state === 'signup') {
-//       if (user) {
-//         return res.redirect(
-//           `${process.env.FRONTEND_URL}/login?error=ALREADY_EXISTS`
-//         );
-//       }
-
-//       user = await User.create({
-//         googleId: data.id,
-//         name: data.name,
-//         email: data.email,
-//       });
-//     }
-
-//     const token = jwt.sign(
-//   { 
-//     id: user._id,
-//     googleAccessToken: tokens.access_token,
-//     googleRefreshToken: tokens.refresh_token // refresh_token might be undefined on repeat login
-//   },
-//   process.env.JWT_SECRET,
-//   { expiresIn: '1h' }
-// );
-
-
-//     res.redirect(`${process.env.FRONTEND_URL}/home?token=${token}`);
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).send('OAuth failed');
-//   }
-// });
-
->>>>>>> 4e96b110194b9d3d7743cc41d0d149bddbb5886a
 router.get('/callback', async (req, res) => {
   try {
     const { code, state } = req.query;
@@ -106,14 +41,14 @@ router.get('/callback', async (req, res) => {
 
     let user = await User.findOne({ googleId: data.id });
 
-    // LOGIN FLOW
+    // LOGIN
     if (state === 'login' && !user) {
       return res.redirect(
         `${process.env.FRONTEND_URL}/login?error=NO_ACCOUNT`
       );
     }
 
-    // SIGNUP FLOW
+    // SIGNUP
     if (state === 'signup') {
       if (user) {
         return res.redirect(
@@ -125,38 +60,25 @@ router.get('/callback', async (req, res) => {
         googleId: data.id,
         name: data.name,
         email: data.email,
-<<<<<<< HEAD
+        googleRefreshToken: tokens.refresh_token
       });
     }
 
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' }
-    );
-=======
-        googleRefreshToken: tokens.refresh_token // store first-time refresh token
-      });
-    }
-
-    // 🔹 Update user refresh token if missing
+    // Update refresh token if missing
     if (!user.googleRefreshToken && tokens.refresh_token) {
       user.googleRefreshToken = tokens.refresh_token;
       await user.save();
     }
 
-    // 🔹 Create JWT with access + refresh token
     const token = jwt.sign(
-  { 
-    id: user._id,
-    googleAccessToken: tokens.access_token,
-    googleRefreshToken: tokens.refresh_token || user.googleRefreshToken
-  },
-  process.env.JWT_SECRET,
-  { expiresIn: '1h' }
-);
-
->>>>>>> 4e96b110194b9d3d7743cc41d0d149bddbb5886a
+      {
+        id: user._id,
+        googleAccessToken: tokens.access_token,
+        googleRefreshToken: tokens.refresh_token || user.googleRefreshToken
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
 
     res.redirect(`${process.env.FRONTEND_URL}/home?token=${token}`);
   } catch (err) {
@@ -165,9 +87,4 @@ router.get('/callback', async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
 module.exports = router;
-=======
-
-module.exports = router;
->>>>>>> 4e96b110194b9d3d7743cc41d0d149bddbb5886a

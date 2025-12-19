@@ -2,36 +2,31 @@ const express = require('express');
 const mongoose = require('mongoose');
 require('dotenv').config();
 const cookieParser = require('cookie-parser');
-<<<<<<< HEAD
-
-
-const app = express();
-=======
-const cors = require('cors'); 
+const cors = require('cors');
 
 const app = express();
+
+// CORS
 app.use(cors({
-  origin: process.env.FRONTEND_URL, 
-  credentials: true 
+  origin: process.env.FRONTEND_URL,
+  credentials: true
 }));
 
->>>>>>> 4e96b110194b9d3d7743cc41d0d149bddbb5886a
-app.use(cookieParser());
+// Middlewares
 app.use(express.json());
+app.use(cookieParser());
 
+// MongoDB connection
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB connected'));
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error(err));
 
-<<<<<<< HEAD
+// Routes
 app.use('/auth', require('./routes/auth'));
 app.use('/user', require('./routes/user'));
-=======
-app.use('/auth', require('./routes/auth'));  
-app.use('/user', require('./routes/user')); 
-app.use('/gmail', require('./routes/gmail')); 
+app.use('/gmail', require('./routes/gmail'));
 
->>>>>>> 4e96b110194b9d3d7743cc41d0d149bddbb5886a
-
-app.listen(process.env.PORT, () =>
-  console.log(`Server running on ${process.env.PORT}`)
-);
+// Server
+app.listen(process.env.PORT, () => {
+  console.log(`Server running on ${process.env.PORT}`);
+});

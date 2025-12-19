@@ -3,7 +3,7 @@ const Login = () => {
   const error = params.get('error');
 
   return (
-    <div style={{ textAlign: 'center', marginTop: '100px' }}>
+    <div style={{ textAlign: 'center', marginTop: 100 }}>
       <h2>Welcome</h2>
 
       {error === 'NO_ACCOUNT' && <p>No account found. Please Sign up.</p>}
@@ -22,8 +22,4 @@ const Login = () => {
   );
 };
 
-<<<<<<< HEAD
 export default Login;
-=======
-export default Login;
->>>>>>> 4e96b110194b9d3d7743cc41d0d149bddbb5886a

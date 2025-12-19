@@ -3,102 +3,60 @@ import axios from 'axios';
 
 const Home = () => {
   const [user, setUser] = useState(null);
-<<<<<<< HEAD
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
-
-    if (token) {
-      localStorage.setItem('token', token);
-      window.history.replaceState({}, document.title, '/home');
-    }
-
-    const storedToken = localStorage.getItem('token');
-    if (storedToken) {
-      axios.get('http://localhost:5000/user/me', {
-        headers: { Authorization: `Bearer ${storedToken}` },
-      })
-      .then(res => setUser(res.data));
-    }
-  }, []);
-
-  return (
-    <div>
-      <h1>Home</h1>
-      {user && (
-        <>
-          <p>Name: {user.name}</p>
-          <p>Email: {user.email}</p>
-        </>
-      )}
-=======
   const [emails, setEmails] = useState([]);
 
   useEffect(() => {
-    // 1️⃣ Get token from URL query (after Google login)
     const params = new URLSearchParams(window.location.search);
     const tokenFromURL = params.get('token');
 
     if (tokenFromURL) {
       localStorage.setItem('token', tokenFromURL);
-      // Remove token from URL
       window.history.replaceState({}, document.title, '/home');
     }
 
     const token = tokenFromURL || localStorage.getItem('token');
     if (!token) return;
 
-    // 2️⃣ Fetch user info
     axios
       .get('http://localhost:5000/user/me', {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` }
       })
-      .then(res => setUser(res.data))
-      .catch(err => console.error('User fetch error:', err));
+      .then(res => setUser(res.data));
 
-    // 3️⃣ Fetch today’s emails
     axios
       .get('http://localhost:5000/gmail/today', {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` }
       })
-      .then(res => setEmails(res.data.emails || []))
-      .catch(err => console.error('Gmail fetch error:', err));
+      .then(res => setEmails(res.data.emails || []));
   }, []);
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div style={{ padding: 20 }}>
       <h1>Home</h1>
 
-      {user ? (
-        <div>
-          <h2>User Info</h2>
+      {user && (
+        <>
           <p><strong>Name:</strong> {user.name}</p>
           <p><strong>Email:</strong> {user.email}</p>
-        </div>
-      ) : (
-        <p>Loading user info...</p>
+        </>
       )}
 
       <hr />
 
-      <div>
-        <h2>Today's Emails</h2>
-        {emails.length > 0 ? (
-          <ul>
-            {emails.map((email, idx) => (
-              <li key={idx} style={{ marginBottom: '10px' }}>
-                <p><strong>From:</strong> {email.from}</p>
-                <p><strong>Subject:</strong> {email.subject}</p>
-                <p><strong>Snippet:</strong> {email.snippet}</p>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>No emails found for today.</p>
-        )}
-      </div>
->>>>>>> 4e96b110194b9d3d7743cc41d0d149bddbb5886a
+      <h2>Today's Emails</h2>
+      {emails.length ? (
+        <ul>
+          {emails.map((e, i) => (
+            <li key={i}>
+              <p><b>From:</b> {e.from}</p>
+              <p><b>Subject:</b> {e.subject}</p>
+              <p>{e.snippet}</p>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>No emails today</p>
+      )}
     </div>
   );
 };
