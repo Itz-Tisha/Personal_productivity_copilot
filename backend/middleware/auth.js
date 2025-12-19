@@ -14,4 +14,8 @@ module.exports = (req, res, next) => {
   } catch (err) {
     return res.status(401).json({ message: 'Session expired' });
   }
+<<<<<<< HEAD
 };
+=======
+};
+>>>>>>> 4e96b110194b9d3d7743cc41d0d149bddbb5886a
