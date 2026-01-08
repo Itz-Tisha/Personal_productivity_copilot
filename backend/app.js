@@ -6,27 +6,31 @@ const cors = require('cors');
 
 const app = express();
 
-// CORS
+// 🔹 CORS
 app.use(cors({
   origin: process.env.FRONTEND_URL,
   credentials: true
 }));
 
-// Middlewares
-app.use(express.json());
+// 🔹 Middlewares
+app.use(express.json()); // for parsing application/json
 app.use(cookieParser());
 
-// MongoDB connection
+// 🔹 MongoDB connection
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error(err));
+  .catch(err => console.error('MongoDB connection error:', err));
 
-// Routes
+// 🔹 Routes
 app.use('/auth', require('./routes/auth'));
 app.use('/user', require('./routes/user'));
-app.use('/gmail', require('./routes/gmail'));
+app.use('/gmail', require('./routes/gmail'));       // Gmail fetch route
 
-// Server
-app.listen(process.env.PORT, () => {
-  console.log(`Server running on ${process.env.PORT}`);
+// 🔹 AI Routes for Summarize & Categorize
+app.use('/gmail', require('./routes/aiActions'));    // Summarize & Categorize route
+
+// 🔹 Server
+const PORT = process.env.PORT;
+app.listen(PORT, () => {
+  console.log(`Server running on ${PORT}`);
 });

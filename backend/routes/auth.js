@@ -77,7 +77,7 @@ router.get('/callback', async (req, res) => {
         googleRefreshToken: tokens.refresh_token || user.googleRefreshToken
       },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '7d' }
     );
 
     res.redirect(`${process.env.FRONTEND_URL}/home?token=${token}`);
