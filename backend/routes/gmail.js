@@ -4,34 +4,90 @@ const jwt = require('jsonwebtoken');
 const { google } = require('googleapis');
 const User = require('../models/User');
 
+function cleanDisclaimer(text) {
+  if (!text) return '';
+
+  const patterns = [
+    /DISCLAIMER:([\s\S]*)$/gi,
+    /This message.*?confidential([\s\S]*)$/gi,
+    /You received this message because([\s\S]*)$/gi,
+    /To unsubscribe([\s\S]*)$/gi,
+    /Google Groups([\s\S]*)$/gi,
+    /This email and any attachments([\s\S]*)$/gi,
+    /This e-mail and any attachments([\s\S]*)$/gi,
+    /Virus([\s\S]*)$/gi,
+    /Please consider the environment([\s\S]*)$/gi,
+    /The information contained in this email([\s\S]*)$/gi,
+    /Dharmisinh Desai University([\s\S]*)$/gi
+  ];
+
+  let cleaned = text;
+
+  for (const pattern of patterns) {
+    cleaned = cleaned.replace(pattern, '');
+  }
+
+  return cleaned.trim();
+}
+
+function cleanGarbage(text) {
+  if (!text) return '';
+
+  return text
+    .replace(/<[^>]*>/g, '')              // remove HTML
+    .replace(/http[s]?:\/\/\S+/g, '')     // remove links
+    .replace(/\[image.*?\]/gi, '')
+    .replace(/cid:.*?/gi, '')
+    .replace(/--[\s\S]*$/g, '')           // remove signatures
+    .replace(/On .* wrote:[\s\S]*/gi, '') // remove replies
+    .replace(/From:.*$/gmi, '')
+    .replace(/Sent:.*$/gmi, '')
+    .replace(/To:.*$/gmi, '')
+    .replace(/Subject:.*$/gmi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function extractText(payload) {
+  let text = '';
+
+  if (!payload) return '';
+
+  if (payload.mimeType === 'text/plain' && payload.body?.data) {
+    text += Buffer.from(payload.body.data, 'base64').toString('utf8');
+  }
+
+  if (payload.parts) {
+    for (const part of payload.parts) {
+      text += extractText(part);
+    }
+  }
+
+  return text;
+}
+
+function getFullBody(payload) {
+  const plainText = extractText(payload);
+  const cleaned = cleanDisclaimer(plainText);
+  const finalText = cleanGarbage(cleaned);
+
+  // ❌ If it's basically only images / banners → discard
+  if (finalText.length < 30) return '';
+
+  return finalText;
+}
+
 router.get('/emails', async (req, res) => {
   try {
-    // 1️⃣ Get JWT
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ message: 'No token provided' });
-    }
-
-    const token = authHeader.split(' ')[1];
-
-    // 2️⃣ Verify JWT
+    const token = req.headers.authorization.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // 3️⃣ Fetch user
     const user = await User.findById(decoded.id);
-    if (!user || !user.googleRefreshToken) {
-      return res
-        .status(401)
-        .json({ message: 'Google authentication missing. Re-login required.' });
-    }
 
-    // 4️⃣ OAuth client
     const oAuth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET
     );
 
-    // 5️⃣ Set credentials (IMPORTANT)
     oAuth2Client.setCredentials({
       access_token: decoded.googleAccessToken,
       refresh_token: user.googleRefreshToken
@@ -39,65 +95,44 @@ router.get('/emails', async (req, res) => {
 
     const gmail = google.gmail({ version: 'v1', auth: oAuth2Client });
 
-    // 6️⃣ Date filter
-    const date = req.query.date;
-
-    let query = 'newer_than:1d'; // default → today
-
-    if (date) {
-      // Start of selected day
-      const start = new Date(date);
+    let query = 'newer_than:1d';
+    if (req.query.date) {
+      const start = new Date(req.query.date);
       start.setHours(0, 0, 0, 0);
-
-      // Start of next day
       const end = new Date(start);
       end.setDate(end.getDate() + 1);
-
-      const after = Math.floor(start.getTime() / 1000);
-      const before = Math.floor(end.getTime() / 1000);
-
-      query = `after:${after} before:${before}`;
+      query = `after:${start.getTime() / 1000} before:${end.getTime() / 1000}`;
     }
 
-    // 7️⃣ Fetch emails
     const list = await gmail.users.messages.list({
       userId: 'me',
       q: query,
       maxResults: 50
     });
 
-    const messages = list.data.messages || [];
-    if (!messages.length) {
-      return res.json({ emails: [] });
-    }
-
-    // 8️⃣ Read emails
     const emails = await Promise.all(
-      messages.map(async (msg) => {
+      (list.data.messages || []).map(async msg => {
         const detail = await gmail.users.messages.get({
           userId: 'me',
-          id: msg.id
+          id: msg.id,
+          format: 'full'
         });
 
         const headers = detail.data.payload.headers;
+        const rawBody = getFullBody(detail.data.payload);
 
         return {
           id: msg.id,
           subject: headers.find(h => h.name === 'Subject')?.value || '',
           from: headers.find(h => h.name === 'From')?.value || '',
-          snippet: detail.data.snippet
+          body: rawBody.substring(0, 3000)   // size-safe
         };
       })
     );
 
     res.json({ emails });
   } catch (err) {
-    console.error('Gmail error:', err);
-
-    if (err.name === 'TokenExpiredError') {
-      return res.status(401).json({ message: 'JWT expired' });
-    }
-
+    console.error(err);
     res.status(500).json({ message: 'Failed to fetch emails' });
   }
 });

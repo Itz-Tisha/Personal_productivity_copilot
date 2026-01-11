@@ -13,7 +13,8 @@ app.use(cors({
 }));
 
 // 🔹 Middlewares
-app.use(express.json()); // for parsing application/json
+app.use(express.json({ limit: '25mb' }));                     // 🔥 FIX
+app.use(express.urlencoded({ limit: '25mb', extended: true })); // 🔥 FIX
 app.use(cookieParser());
 
 // 🔹 MongoDB connection
@@ -24,10 +25,8 @@ mongoose.connect(process.env.MONGO_URI)
 // 🔹 Routes
 app.use('/auth', require('./routes/auth'));
 app.use('/user', require('./routes/user'));
-app.use('/gmail', require('./routes/gmail'));       // Gmail fetch route
-
-// 🔹 AI Routes for Summarize & Categorize
-app.use('/gmail', require('./routes/aiActions'));    // Summarize & Categorize route
+app.use('/gmail', require('./routes/gmail'));
+app.use('/gmail', require('./routes/aiActions'));
 
 // 🔹 Server
 const PORT = process.env.PORT;
