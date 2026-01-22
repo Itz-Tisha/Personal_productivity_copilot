@@ -3,14 +3,15 @@ const router = express.Router();
 const { google } = require('googleapis');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-
+//we used callback url because once we send user for login/signup to google consent screen , then google dont know ur application url . so after user verification
+// google use that callback url to redirect to my application.
 const oAuth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
   `${process.env.BACKEND_URL}/auth/callback`
 );
 
-// 🔹 LOGIN / SIGNUP redirect
+// this code send user to google consent screen to verify if user has account before or for sign up request = create account. 
 router.get('/login', (req, res) => {
   const mode = req.query.mode;
 
@@ -20,7 +21,9 @@ router.get('/login', (req, res) => {
     scope: [
       'profile',
       'email',
-      'https://www.googleapis.com/auth/gmail.readonly'
+      'https://www.googleapis.com/auth/gmail.readonly',
+      'https://www.googleapis.com/auth/calendar.events',
+      'https://www.googleapis.com/auth/gmail.modify',
     ],
     state: mode,
   });
@@ -83,6 +86,7 @@ router.get('/login', (req, res) => {
 //   }
 // });
 
+//
 router.get('/callback', async (req, res) => {
   try {
     const { code, state } = req.query;
@@ -132,7 +136,7 @@ router.get('/callback', async (req, res) => {
     googleRefreshToken: tokens.refresh_token || user.googleRefreshToken
   },
   process.env.JWT_SECRET,
-  { expiresIn: '1h' }
+  { expiresIn: '7d' }
 );
 
 
