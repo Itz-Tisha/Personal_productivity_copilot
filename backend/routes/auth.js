@@ -33,60 +33,7 @@ router.get('/login', (req, res) => {
 
 
 
-// 🔹 Google callback
-// router.get('/callback', async (req, res) => {
-//   try {
-//     const { code, state } = req.query;
 
-//     const { tokens } = await oAuth2Client.getToken(code);
-//     oAuth2Client.setCredentials(tokens);
-
-//     const oauth2 = google.oauth2({ auth: oAuth2Client, version: 'v2' });
-//     const { data } = await oauth2.userinfo.get();
-
-//     let user = await User.findOne({ googleId: data.id });
-
-//     // LOGIN FLOW
-//     if (state === 'login' && !user) {
-//       return res.redirect(
-//         `${process.env.FRONTEND_URL}/login?error=NO_ACCOUNT`
-//       );
-//     }
-
-//     // SIGNUP FLOW
-//     if (state === 'signup') {
-//       if (user) {
-//         return res.redirect(
-//           `${process.env.FRONTEND_URL}/login?error=ALREADY_EXISTS`
-//         );
-//       }
-
-//       user = await User.create({
-//         googleId: data.id,
-//         name: data.name,
-//         email: data.email,
-//       });
-//     }
-
-//     const token = jwt.sign(
-//   { 
-//     id: user._id,
-//     googleAccessToken: tokens.access_token,
-//     googleRefreshToken: tokens.refresh_token // refresh_token might be undefined on repeat login
-//   },
-//   process.env.JWT_SECRET,
-//   { expiresIn: '1h' }
-// );
-
-
-//     res.redirect(`${process.env.FRONTEND_URL}/home?token=${token}`);
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).send('OAuth failed');
-//   }
-// });
-
-//
 router.get('/callback', async (req, res) => {
   try {
     const { code, state } = req.query;
@@ -143,9 +90,14 @@ router.get('/callback', async (req, res) => {
     res.redirect(`${process.env.FRONTEND_URL}/home?token=${token}`);
   } catch (err) {
     console.error(err);
+  
     res.status(500).send('OAuth failed');
   }
 });
 
 
 module.exports = router;
+
+
+
+

@@ -12,7 +12,10 @@ router.get('/me', async (req, res) => {
     const user = await User.findById(decoded.id);
     res.json({ name: user.name, email: user.email });
   } catch (err) {
-    res.status(401).json({ message: 'Invalid token' });
+    if (err.name === 'TokenExpiredError') {
+    return res.status(401).json({ message: 'TOKEN_EXPIRED' });
+  }
+  return res.status(401).json({ message: 'INVALID_TOKEN' });
   }
 });
 
