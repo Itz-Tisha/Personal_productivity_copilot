@@ -26,7 +26,7 @@ app.use('/calendar', require('./routes/calendar'));
 app.use('/ai-extra', require('./routes/aiRoutes'));
 
 
-
+app.use("/api/compose", require("./routes/compose"));
 app.use('/gmail', gmailDraftRoutes);
 
 app.listen(process.env.PORT, () =>
